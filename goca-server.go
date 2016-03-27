@@ -5,7 +5,6 @@ import (
 	"crypto/md5"
 	"crypto/rand"
 	"fmt"
-	"io"
 	"math/big"
 	"net"
 	"os"
@@ -75,19 +74,19 @@ func main() {
 	dss_x := *big.NewInt(0)
 	dss_x.SetString(SK_CA, 10)
 
-	dss_hash := md5.New()
-
 	var dss_k *big.Int
 	dss_k, _ = rand.Int(rand.Reader, &dss_q)
 
 	dss_r := *big.NewInt(0)
 	dss_r.Mod((dss_g.Exp(&dss_g, dss_k, &dss_p)), &dss_q)
 
-	dss_s := big.NewInt(0)
-	io.WriteString(dss_hash, CA_MSG)
+	dss_hash := md5.New()
+	dss_hash.Write([]byte(CA_MSG))
 	dss_hash_bigInt := big.NewInt(0)
-	dss_hash_bigInt.SetString(string(dss_hash.Sum(nil)), 10)
+	dss_hash_bigInt.SetBytes(dss_hash.Sum(nil))
+	fmt.Println(dss_hash_bigInt)
 
+	dss_s := big.NewInt(0)
 	dss_s = dss_k.ModInverse(dss_k.Add(dss_hash_bigInt, dss_x.Mul(&dss_x, &dss_r)), &dss_q)
 
 	generateCert(connection, user, &userPubKey, dss_s, &dss_r, dss_hash_bigInt, expDateString)
