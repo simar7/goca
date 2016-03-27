@@ -9,7 +9,6 @@ import (
 	"math/big"
 	"net"
 	"os"
-	"strings"
 	"time"
 )
 
@@ -25,6 +24,15 @@ const sys_g string = "9438919277632739858984532698034981452643386909341278234543
 const SK_CA string = "432398415306986194693973996870836079581453988813"
 const PK_CA string = "49336018324808093534733548840411752485726058527829630668967480568854756416567496216294919051910148686186622706869702321664465094703247368646506821015290302480990450130280616929226917246255147063292301724297680683401258636182185599124131170077548450754294083728885075516985144944984920010138492897272069257160"
 
+func generateCert(connection net.Conn, user string, userPubKey *big.Int,
+	dss_r *big.Int, dss_s *big.Int, dss_hash *big.Int, expDate time.Time) {
+
+	fmt.Printf("dss_r = %v \ndss_s = %v\n", dss_r, dss_s)
+	fmt.Printf("expiry date = %v\n", expDate)
+
+	connection.Write([]byte("test" + "\n"))
+}
+
 func main() {
 	fmt.Println("Launching the goca server...")
 
@@ -33,14 +41,18 @@ func main() {
 	connection, _ := ln.Accept()
 	reader := bufio.NewReader(os.Stdin)
 
-	fmt.Println("Listening to goca-client request on port: %v\n", PORT)
+	fmt.Println("Listening to goca-client request on port: ", string(PORT))
 
-	msg, _ := bufio.NewReader(connection).ReadString('\n')
-	fmt.Println("User identity requesting certificate: ", string(msg))
+	user, _ := bufio.NewReader(connection).ReadString('\n')
+	fmt.Println("User identity requesting certificate: ", string(user))
+
+	userPubKeyStr, _ := bufio.NewReader(connection).ReadString('\n')
+	fmt.Println("Public Key of the connected user: ", string(userPubKeyStr))
+	userPubKey := *big.NewInt(0)
+	userPubKey.SetString(userPubKeyStr, 10)
 
 	fmt.Print("Enter the expiry date for this certificate (yyyy-mmm-dd): ")
 	date, _ := reader.ReadString('\n')
-
 	const shortForm = "2006-Jan-02"
 	expDate, _ := time.Parse(shortForm, date)
 
@@ -72,9 +84,5 @@ func main() {
 
 	dss_s = dss_k.ModInverse(dss_k.Add(dss_hash_bigInt, dss_x.Mul(&dss_x, &dss_r)), &dss_q)
 
-	fmt.Printf("dss_r = %v \ndss_s = %v\n", dss_r, dss_s)
-	fmt.Printf("expiry date = %v\n", expDate)
-
-	retmsg := strings.ToUpper(msg)
-	connection.Write([]byte(retmsg + "\n"))
+	generateCert(connection, user, &userPubKey, dss_s, &dss_r, dss_hash_bigInt, expDate)
 }
