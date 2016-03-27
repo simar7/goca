@@ -87,14 +87,15 @@ func main() {
 		dss_k := big.NewInt(0)
 		dss_k, _ = rand.Int(rand.Reader, dss_q)
 
-		dss_r.Mod((dss_g.Exp(dss_g, dss_k, dss_p)), dss_q)
+		dss_r = new(big.Int).Mod(new(big.Int).Exp(dss_g, dss_k, dss_p), dss_q)
 
 		dss_hash := md5.New()
 		dss_hash.Write([]byte(CA_MSG))
 		dss_hash_bigInt.SetBytes(dss_hash.Sum(nil))
 
-		dss_i := dss_k.ModInverse(dss_k, dss_q)
-		dss_s = dss_q.Mod(dss_i.Mul(dss_hash_bigInt.Add(dss_hash_bigInt, dss_x.Mul(dss_x, dss_r)), dss_i), dss_q)
+		dss_i := new(big.Int).ModInverse(dss_k, dss_q)
+		dss_s = new(big.Int).Mul((new(big.Int).Add(dss_hash_bigInt, new(big.Int).Mul(dss_x, dss_r))), dss_i)
+		dss_s = new(big.Int).Mod(dss_s, dss_q)
 	}
 
 	generateCert(connection, user, userPubKeyStr, dss_r, dss_s, dss_hash_bigInt, expDateString)
