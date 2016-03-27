@@ -97,5 +97,5 @@ func main() {
 		dss_s = dss_q.Mod(dss_i.Mul(dss_hash_bigInt.Add(dss_hash_bigInt, dss_x.Mul(dss_x, dss_r)), dss_i), dss_q)
 	}
 
-	generateCert(connection, user, userPubKeyStr, dss_s, dss_r, dss_hash_bigInt, expDateString)
+	generateCert(connection, user, userPubKeyStr, dss_r, dss_s, dss_hash_bigInt, expDateString)
 }

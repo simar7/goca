@@ -61,11 +61,13 @@ func verifyCert(dss_r_str string, dss_s_str string, dss_h_str string, dss_g *big
 	user_public_key.SetString(user_public_key_str, 10)
 
 	if (dss_r.Cmp(big.NewInt(0)) == 1) && (dss_r.Cmp(sys_q_bigInt) == -1) && (dss_r.Cmp(big.NewInt(0)) == 1) && (dss_s.Cmp(sys_q_bigInt) == -1) {
-		dss_u := sys_q_bigInt.Mod(dss_h.Mul(dss_h, dss_s.ModInverse(dss_s, sys_q_bigInt)), sys_q_bigInt)
-		dss_v := sys_q_bigInt.Mod(dss_r.Mul(dss_r, dss_s.ModInverse(dss_s, sys_q_bigInt)), sys_q_bigInt)
-		dss_w := dss_g.Exp(dss_g, dss_u, dss_p).Mul(dss_g.Exp(dss_g, dss_u, dss_p), user_public_key.Exp(user_public_key, dss_v, dss_p))
-		dss_w = dss_w.Mod(dss_w, dss_p)
-		dss_w = dss_w.Mod(dss_w, sys_q_bigInt)
+		dss_u := new(big.Int).Mod((new(big.Int).Mul(dss_h, new(big.Int).ModInverse(dss_s, sys_q_bigInt))), sys_q_bigInt)
+
+		dss_v := new(big.Int).Mod(new(big.Int).Mul(dss_r, new(big.Int).ModInverse(dss_s, sys_q_bigInt)), sys_q_bigInt)
+
+		dss_w := new(big.Int).Mul(new(big.Int).Exp(dss_g, dss_u, dss_p), new(big.Int).Exp(user_public_key, dss_v, dss_p))
+		dss_w = new(big.Int).Mod(dss_w, dss_p)
+		dss_w = new(big.Int).Mod(dss_w, sys_q_bigInt)
 
 		if dss_w.Cmp(dss_r) == 0 {
 			return 0
@@ -127,5 +129,10 @@ func main() {
 		fmt.Printf("dss_hash = %v\n", dss_h_str)
 	} else {
 		fmt.Println("DSS Certificate is invalid!")
+		fmt.Println("dss_r_str: ", dss_r_str)
+		fmt.Println("dss_s_str: ", dss_s_str)
+		fmt.Println("user_public_key: ", user_public_key)
+		fmt.Println("expDate_str: ", expDate_str)
+		fmt.Println("dss_h_str: ", dss_h_str)
 	}
 }
