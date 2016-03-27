@@ -62,32 +62,35 @@ func main() {
 	expDateString := expDate.Format("2006-01-02")
 
 	// System Parameters
-	dss_p := *big.NewInt(0)
+	dss_p := big.NewInt(0)
 	dss_p.SetString(sys_p, 10)
 
-	dss_q := *big.NewInt(0)
+	dss_q := big.NewInt(0)
 	dss_q.SetString(sys_q, 10)
 
-	dss_g := *big.NewInt(0)
+	dss_g := big.NewInt(0)
 	dss_g.SetString(sys_g, 10)
 
-	dss_x := *big.NewInt(0)
+	dss_x := big.NewInt(0)
 	dss_x.SetString(SK_CA, 10)
 
-	var dss_k *big.Int
-	dss_k, _ = rand.Int(rand.Reader, &dss_q)
-
-	dss_r := *big.NewInt(0)
-	dss_r.Mod((dss_g.Exp(&dss_g, dss_k, &dss_p)), &dss_q)
-
-	dss_hash := md5.New()
-	dss_hash.Write([]byte(CA_MSG))
-	dss_hash_bigInt := big.NewInt(0)
-	dss_hash_bigInt.SetBytes(dss_hash.Sum(nil))
-	fmt.Println(dss_hash_bigInt)
-
 	dss_s := big.NewInt(0)
-	dss_s = dss_k.ModInverse(dss_k.Add(dss_hash_bigInt, dss_x.Mul(&dss_x, &dss_r)), &dss_q)
+	dss_r := big.NewInt(0)
+	dss_hash_bigInt := big.NewInt(0)
 
-	generateCert(connection, user, &userPubKey, dss_s, &dss_r, dss_hash_bigInt, expDateString)
+	for dss_s.Cmp(big.NewInt(0)) == 0 {
+		dss_k := big.NewInt(0)
+		dss_k, _ = rand.Int(rand.Reader, dss_q)
+
+		dss_r.Mod((dss_g.Exp(dss_g, dss_k, dss_p)), dss_q)
+
+		dss_hash := md5.New()
+		dss_hash.Write([]byte(CA_MSG))
+		dss_hash_bigInt.SetBytes(dss_hash.Sum(nil))
+
+		dss_i := dss_k.ModInverse(dss_k, dss_q)
+		dss_s = dss_q.Mod(dss_i.Mul(dss_hash_bigInt.Add(dss_hash_bigInt, dss_x.Mul(dss_x, dss_r)), dss_i), dss_q)
+	}
+
+	generateCert(connection, user, &userPubKey, dss_s, dss_r, dss_hash_bigInt, expDateString)
 }
