@@ -25,10 +25,11 @@ const SK_CA string = "432398415306986194693973996870836079581453988813"
 const PK_CA string = "49336018324808093534733548840411752485726058527829630668967480568854756416567496216294919051910148686186622706869702321664465094703247368646506821015290302480990450130280616929226917246255147063292301724297680683401258636182185599124131170077548450754294083728885075516985144944984920010138492897272069257160"
 
 func generateCert(connection net.Conn, user string, userPubKey *big.Int,
-	dss_r *big.Int, dss_s *big.Int, dss_hash *big.Int, expDate time.Time) {
+	dss_r *big.Int, dss_s *big.Int, dss_hash *big.Int, expDateString string) {
 
 	fmt.Printf("dss_r = %v \ndss_s = %v\n", dss_r, dss_s)
-	fmt.Printf("expiry date = %v\n", expDate)
+	fmt.Printf("expiry date = %v\n", expDateString)
+	fmt.Printf("dss_hash = %v\n", dss_hash)
 
 	connection.Write([]byte("test" + "\n"))
 }
@@ -51,10 +52,15 @@ func main() {
 	userPubKey := *big.NewInt(0)
 	userPubKey.SetString(userPubKeyStr, 10)
 
-	fmt.Print("Enter the expiry date for this certificate (yyyy-mmm-dd): ")
-	date, _ := reader.ReadString('\n')
-	const shortForm = "2006-Jan-02"
-	expDate, _ := time.Parse(shortForm, date)
+	// XXX: Seriously golang WTF
+	fmt.Print("Enter the the amount of years for this certificate to be valid: ")
+	years, _ := reader.ReadString('\n')
+	var yearsInt int
+	fmt.Sscan(years, &yearsInt)
+	now := time.Now()
+	daysToAdd := time.Hour * 24 * 365 * time.Duration(yearsInt)
+	expDate := now.Add(daysToAdd)
+	expDateString := expDate.Format("2006-01-02")
 
 	// System Parameters
 	dss_p := *big.NewInt(0)
@@ -84,5 +90,5 @@ func main() {
 
 	dss_s = dss_k.ModInverse(dss_k.Add(dss_hash_bigInt, dss_x.Mul(&dss_x, &dss_r)), &dss_q)
 
-	generateCert(connection, user, &userPubKey, dss_s, &dss_r, dss_hash_bigInt, expDate)
+	generateCert(connection, user, &userPubKey, dss_s, &dss_r, dss_hash_bigInt, expDateString)
 }
