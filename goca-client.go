@@ -44,17 +44,57 @@ func checkParamValidity(dss_p *big.Int, dss_q *big.Int, dss_g *big.Int) int {
 	return 0
 }
 
+func verifyCert(dss_r_str string, dss_s_str string, dss_h_str string, dss_g *big.Int, dss_p *big.Int, user_public_key_str string) int {
+	dss_r := big.NewInt(0)
+	dss_r.SetString(dss_r_str, 10)
+
+	dss_s := big.NewInt(0)
+	dss_s.SetString(dss_s_str, 10)
+
+	dss_h := big.NewInt(0)
+	dss_h.SetString(dss_h_str, 10)
+
+	sys_q_bigInt := big.NewInt(0)
+	sys_q_bigInt.SetString(sys_q, 10)
+
+	user_public_key := big.NewInt(0)
+	user_public_key.SetString(user_public_key_str, 10)
+
+	if (dss_r.Cmp(big.NewInt(0)) == 1) && (dss_r.Cmp(sys_q_bigInt) == -1) && (dss_r.Cmp(big.NewInt(0)) == 1) && (dss_s.Cmp(sys_q_bigInt) == -1) {
+		dss_u := sys_q_bigInt.Mod(dss_h.Mul(dss_h, dss_s.ModInverse(dss_s, sys_q_bigInt)), sys_q_bigInt)
+		dss_v := sys_q_bigInt.Mod(dss_r.Mul(dss_r, dss_s.ModInverse(dss_s, sys_q_bigInt)), sys_q_bigInt)
+		dss_w := dss_g.Exp(dss_g, dss_u, dss_p).Mul(dss_g.Exp(dss_g, dss_u, dss_p), user_public_key.Exp(user_public_key, dss_v, dss_p))
+		dss_w = dss_w.Mod(dss_w, dss_p)
+		dss_w = dss_w.Mod(dss_w, sys_q_bigInt)
+
+		if dss_w.Cmp(dss_r) == 0 {
+			return 0
+		} else {
+			fmt.Println("dss_r: ", dss_r)
+			fmt.Println("sys_q_bigInt: ", sys_q_bigInt)
+			fmt.Println("dss_s: ", dss_s)
+			fmt.Println("dss_h: ", dss_h)
+			fmt.Println("dss_u: ", dss_u)
+			fmt.Println("dss_v: ", dss_v)
+			fmt.Println("dss_w: ", dss_w)
+			fmt.Println("dss_r: ", dss_r)
+		}
+	}
+
+	return -1
+}
+
 func main() {
-	dss_p := *big.NewInt(0)
+	dss_p := big.NewInt(0)
 	dss_p.SetString(sys_p, 10)
 
-	dss_q := *big.NewInt(0)
+	dss_q := big.NewInt(0)
 	dss_q.SetString(sys_q, 10)
 
-	dss_g := *big.NewInt(0)
+	dss_g := big.NewInt(0)
 	dss_g.SetString(sys_g, 10)
 
-	if checkParamValidity(&dss_p, &dss_q, &dss_g) != 0 {
+	if checkParamValidity(dss_p, dss_q, dss_g) != 0 {
 		fmt.Println("The selection of either p, q, or g doesn't meet the DSS requirement")
 		fmt.Println("Exiting...")
 		os.Exit(1)
@@ -71,6 +111,21 @@ func main() {
 	user_public_key, _ := reader.ReadString('\n')
 	fmt.Fprintf(connection, user_public_key+"\n")
 
-	msg, _ := bufio.NewReader(connection).ReadString('\n')
-	fmt.Print("Message from server: " + msg)
+	// Receive stuff from goca-server
+	dss_r_str, _ := bufio.NewReader(connection).ReadString('\n')
+	dss_s_str, _ := bufio.NewReader(connection).ReadString('\n')
+	user_public_key_str, _ := bufio.NewReader(connection).ReadString('\n')
+	expDate_str, _ := bufio.NewReader(connection).ReadString('\n')
+	dss_h_str, _ := bufio.NewReader(connection).ReadString('\n')
+
+	if verifyCert(dss_r_str, dss_s_str, dss_h_str, dss_g, dss_p, user_public_key_str) == 0 {
+		fmt.Println("DSS Certificate is Valid!")
+		fmt.Printf("dss_r = %v", dss_r_str)
+		fmt.Printf("dss_s = %v\n", dss_s_str)
+		fmt.Printf("user_public_key_str = %v\n", user_public_key_str)
+		fmt.Printf("expiry date = %v\n", expDate_str)
+		fmt.Printf("dss_hash = %v\n", dss_h_str)
+	} else {
+		fmt.Println("DSS Certificate is invalid!")
+	}
 }
