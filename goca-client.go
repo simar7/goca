@@ -17,6 +17,9 @@ const DSS_Q_LEN int = 160
 // User Public Key
 const SK_USER string = "432398415306986194693973996870836079581453988813"
 
+// CA Public Key
+const SK_CA string = "49336018324808093534733548840411752485726058527829630668967480568854756416567496216294919051910148686186622706869702321664465094703247368646506821015290302480990450130280616929226917246255147063292301724297680683401258636182185599124131170077548450754294083728885075516985144944984920010138492897272069257160"
+
 // System Paramters
 const sys_p string = "168199388701209853920129085113302407023173962717160229197318545484823101018386724351964316301278642143567435810448472465887143222934545154943005714265124445244247988777471773193847131514083030740407543233616696550197643519458134465700691569680905568000063025830089599260400096259430726498683087138415465107499"
 const sys_q string = "959452661475451209325433595634941112150003865821"
@@ -56,8 +59,8 @@ func verifyCert(dss_r_str string, dss_s_str string, dss_h_str string, dss_g *big
 	sys_q_bigInt := big.NewInt(0)
 	sys_q_bigInt.SetString(sys_q, 10)
 
-	user_public_key := big.NewInt(0)
-	user_public_key.SetString(SK_USER, 10)
+	ca_public_key := big.NewInt(0)
+	ca_public_key.SetString(SK_CA, 10)
 
 	if (dss_r.Cmp(big.NewInt(0)) == 1) && (dss_r.Cmp(sys_q_bigInt) == -1) && (dss_r.Cmp(big.NewInt(0)) == 1) && (dss_s.Cmp(sys_q_bigInt) == -1) {
 		dss_u := new(big.Int).Mod((new(big.Int).Mul(dss_h, new(big.Int).ModInverse(dss_s, sys_q_bigInt))), sys_q_bigInt)
@@ -66,7 +69,7 @@ func verifyCert(dss_r_str string, dss_s_str string, dss_h_str string, dss_g *big
 
 		dss_w := new(big.Int).Exp(dss_g, dss_u, dss_p)
 		fmt.Println("dss_w: ", dss_w)
-		dss_w = new(big.Int).Mul(dss_w, new(big.Int).Exp(user_public_key, dss_v, dss_p))
+		dss_w = new(big.Int).Mul(dss_w, new(big.Int).Exp(ca_public_key, dss_v, dss_p))
 		dss_w = new(big.Int).Mod(dss_w, dss_p)
 		dss_w = new(big.Int).Mod(dss_w, sys_q_bigInt)
 		fmt.Println("dss_w: ", dss_w)
