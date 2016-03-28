@@ -14,6 +14,9 @@ const DSS_P_MAX_LEN int = 1024
 const DSS_P_STRENGTH int = 64
 const DSS_Q_LEN int = 160
 
+// User Public Key
+const SK_USER string = "432398415306986194693973996870836079581453988813"
+
 // System Paramters
 const sys_p string = "168199388701209853920129085113302407023173962717160229197318545484823101018386724351964316301278642143567435810448472465887143222934545154943005714265124445244247988777471773193847131514083030740407543233616696550197643519458134465700691569680905568000063025830089599260400096259430726498683087138415465107499"
 const sys_q string = "959452661475451209325433595634941112150003865821"
@@ -26,17 +29,13 @@ func checkParamValidity(dss_p *big.Int, dss_q *big.Int, dss_g *big.Int) int {
 		return 1
 	}
 
-	// FIXME: This is the correct way to use the big.Int package
-	//(*big.Int).Mod(big.NewInt(0), big.NewInt(1), big.NewInt(2))
-	// %s/big.NewInt(0) or otherdss.p/q/g/ / (*big.Int)
-
 	q_check := ((dss_q.BitLen() == DSS_Q_LEN) && (dss_q.ProbablyPrime(PROB_PRIME_LIMIT)) &&
-		(big.NewInt(0).Cmp((big.NewInt(0).Mod(big.NewInt(0).Sub(dss_p, big.NewInt(1)), dss_q))) == 0))
+		(new(big.Int).Cmp(new(big.Int).Mod(new(big.Int).Sub(dss_p, big.NewInt(1)), dss_q))) == 0)
 	if !q_check {
 		return 1
 	}
 
-	g_check := (dss_g.Exp(dss_g, dss_q, dss_p).Cmp(big.NewInt(1)) == 0)
+	g_check := (new(big.Int).Exp(dss_g, dss_q, dss_p).Cmp(big.NewInt(1)) == 0)
 	if !g_check {
 		return 1
 	}
@@ -44,7 +43,7 @@ func checkParamValidity(dss_p *big.Int, dss_q *big.Int, dss_g *big.Int) int {
 	return 0
 }
 
-func verifyCert(dss_r_str string, dss_s_str string, dss_h_str string, dss_g *big.Int, dss_p *big.Int, user_public_key_str string) int {
+func verifyCert(dss_r_str string, dss_s_str string, dss_h_str string, dss_g *big.Int, dss_p *big.Int) int {
 	dss_r := big.NewInt(0)
 	dss_r.SetString(dss_r_str, 10)
 
@@ -58,16 +57,19 @@ func verifyCert(dss_r_str string, dss_s_str string, dss_h_str string, dss_g *big
 	sys_q_bigInt.SetString(sys_q, 10)
 
 	user_public_key := big.NewInt(0)
-	user_public_key.SetString(user_public_key_str, 10)
+	user_public_key.SetString(SK_USER, 10)
 
 	if (dss_r.Cmp(big.NewInt(0)) == 1) && (dss_r.Cmp(sys_q_bigInt) == -1) && (dss_r.Cmp(big.NewInt(0)) == 1) && (dss_s.Cmp(sys_q_bigInt) == -1) {
 		dss_u := new(big.Int).Mod((new(big.Int).Mul(dss_h, new(big.Int).ModInverse(dss_s, sys_q_bigInt))), sys_q_bigInt)
 
 		dss_v := new(big.Int).Mod(new(big.Int).Mul(dss_r, new(big.Int).ModInverse(dss_s, sys_q_bigInt)), sys_q_bigInt)
 
-		dss_w := new(big.Int).Mul(new(big.Int).Exp(dss_g, dss_u, dss_p), new(big.Int).Exp(user_public_key, dss_v, dss_p))
+		dss_w := new(big.Int).Exp(dss_g, dss_u, dss_p)
+		fmt.Println("dss_w: ", dss_w)
+		dss_w = new(big.Int).Mul(dss_w, new(big.Int).Exp(user_public_key, dss_v, dss_p))
 		dss_w = new(big.Int).Mod(dss_w, dss_p)
 		dss_w = new(big.Int).Mod(dss_w, sys_q_bigInt)
+		fmt.Println("dss_w: ", dss_w)
 
 		if dss_w.Cmp(dss_r) == 0 {
 			return 0
@@ -109,9 +111,9 @@ func main() {
 	user_id, _ := reader.ReadString('\n')
 	fmt.Fprintf(connection, user_id+"\n")
 
-	fmt.Print("Enter the user's public key: ")
-	user_public_key, _ := reader.ReadString('\n')
-	fmt.Fprintf(connection, user_public_key+"\n")
+	fmt.Print("Public key OK? [", SK_USER, "]: Press Enter to accept.")
+	reader.ReadString('\n')
+	fmt.Fprintf(connection, SK_USER+"\n")
 
 	// Receive stuff from goca-server
 	dss_r_str, _ := bufio.NewReader(connection).ReadString('\n')
@@ -120,7 +122,7 @@ func main() {
 	expDate_str, _ := bufio.NewReader(connection).ReadString('\n')
 	dss_h_str, _ := bufio.NewReader(connection).ReadString('\n')
 
-	if verifyCert(dss_r_str, dss_s_str, dss_h_str, dss_g, dss_p, user_public_key_str) == 0 {
+	if verifyCert(dss_r_str, dss_s_str, dss_h_str, dss_g, dss_p) == 0 {
 		fmt.Println("DSS Certificate is Valid!")
 		fmt.Printf("dss_r = %v", dss_r_str)
 		fmt.Printf("dss_s = %v\n", dss_s_str)
@@ -131,7 +133,7 @@ func main() {
 		fmt.Println("DSS Certificate is invalid!")
 		fmt.Println("dss_r_str: ", dss_r_str)
 		fmt.Println("dss_s_str: ", dss_s_str)
-		fmt.Println("user_public_key: ", user_public_key)
+		fmt.Println("user_public_key: ", SK_USER)
 		fmt.Println("expDate_str: ", expDate_str)
 		fmt.Println("dss_h_str: ", dss_h_str)
 	}
