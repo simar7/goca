@@ -28,14 +28,11 @@ func generateCert(connection net.Conn, user string, userPubKey_str string,
 
 	connection.Write([]byte(dss_r.String() + "\n"))
 	connection.Write([]byte(dss_s.String() + "\n"))
-	connection.Write([]byte(userPubKey_str + "\n"))
 	connection.Write([]byte(expDateString + "\n"))
 	connection.Write([]byte(dss_hash.String() + "\n"))
 
-	fmt.Printf("dss_r = %v \ndss_s = %v\n", dss_r, dss_s)
-	fmt.Printf("private key = %v\n", userPubKey_str)
-	fmt.Printf("expiry date = %v\n", expDateString)
-	fmt.Printf("dss_hash = %v\n", dss_hash)
+	fmt.Print("The user: ", user, "holds the following CA certficiate\n")
+	fmt.Print(user, userPubKey_str, expDateString, dss_r.String(), dss_s.String(), '\n')
 }
 
 func main() {

@@ -68,23 +68,12 @@ func verifyCert(dss_r_str string, dss_s_str string, dss_h_str string, dss_g *big
 		dss_v := new(big.Int).Mod(new(big.Int).Mul(dss_r, new(big.Int).ModInverse(dss_s, sys_q_bigInt)), sys_q_bigInt)
 
 		dss_w := new(big.Int).Exp(dss_g, dss_u, dss_p)
-		fmt.Println("dss_w: ", dss_w)
 		dss_w = new(big.Int).Mul(dss_w, new(big.Int).Exp(ca_public_key, dss_v, dss_p))
 		dss_w = new(big.Int).Mod(dss_w, dss_p)
 		dss_w = new(big.Int).Mod(dss_w, sys_q_bigInt)
-		fmt.Println("dss_w: ", dss_w)
 
 		if dss_w.Cmp(dss_r) == 0 {
 			return 0
-		} else {
-			fmt.Println("dss_r: ", dss_r)
-			fmt.Println("sys_q_bigInt: ", sys_q_bigInt)
-			fmt.Println("dss_s: ", dss_s)
-			fmt.Println("dss_h: ", dss_h)
-			fmt.Println("dss_u: ", dss_u)
-			fmt.Println("dss_v: ", dss_v)
-			fmt.Println("dss_w: ", dss_w)
-			fmt.Println("dss_r: ", dss_r)
 		}
 	}
 
@@ -121,23 +110,14 @@ func main() {
 	// Receive stuff from goca-server
 	dss_r_str, _ := bufio.NewReader(connection).ReadString('\n')
 	dss_s_str, _ := bufio.NewReader(connection).ReadString('\n')
-	user_public_key_str, _ := bufio.NewReader(connection).ReadString('\n')
 	expDate_str, _ := bufio.NewReader(connection).ReadString('\n')
 	dss_h_str, _ := bufio.NewReader(connection).ReadString('\n')
 
 	if verifyCert(dss_r_str, dss_s_str, dss_h_str, dss_g, dss_p) == 0 {
 		fmt.Println("DSS Certificate is Valid!")
-		fmt.Printf("dss_r = %v", dss_r_str)
-		fmt.Printf("dss_s = %v\n", dss_s_str)
-		fmt.Printf("user_public_key_str = %v\n", user_public_key_str)
-		fmt.Printf("expiry date = %v\n", expDate_str)
-		fmt.Printf("dss_hash = %v\n", dss_h_str)
+		fmt.Println(user_id, expDate_str, dss_r_str, dss_s_str)
 	} else {
 		fmt.Println("DSS Certificate is invalid!")
-		fmt.Println("dss_r_str: ", dss_r_str)
-		fmt.Println("dss_s_str: ", dss_s_str)
-		fmt.Println("user_public_key: ", SK_USER)
-		fmt.Println("expDate_str: ", expDate_str)
-		fmt.Println("dss_h_str: ", dss_h_str)
+		fmt.Print(user_id, expDate_str, dss_r_str, dss_s_str, '\n')
 	}
 }
